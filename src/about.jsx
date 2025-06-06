@@ -1,25 +1,21 @@
 import React, { useState, useEffect, useRef } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { AutoComplete } from "primereact/autocomplete";
-
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import "primereact/resources/themes/lara-light-indigo/theme.css";
 import "primereact/resources/primereact.min.css";
-
 import {
   ClientSideRowModelModule,
   RowSelectionModule,
   ModuleRegistry,
   PaginationModule,
 } from "ag-grid-community";
-
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
   RowSelectionModule,
   PaginationModule,
 ]);
-
 const About = () => {
   const gridRef = useRef();
   const [rowData, setRowData] = useState([]);
@@ -29,7 +25,6 @@ const About = () => {
   const [searchText, setSearchText] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [gridApi, setGridApi] = useState(null);
-
   // Sample initial data
   const allData = [
     { id: 1, name: "Alice", group: "Group A", price: 100, number: 120 },
@@ -48,7 +43,6 @@ const About = () => {
     { id: 14, name: "Nick", group: "Group D", price: 70, number: 65 },
     { id: 15, name: "Olivia", group: "Group E", price: 150, number: 32 },
   ];
-
   const [colDefs] = useState([
     {
       field: "id",
@@ -76,11 +70,9 @@ const About = () => {
       cellRenderer: (params) => renderClickableCell(params),
     },
   ]);
-
   useEffect(() => {
     setRowData([...allData]);
   }, []);
-
   const renderClickableCell = (params) => {
     return (
       <div
@@ -91,35 +83,28 @@ const About = () => {
       </div>
     );
   };
-
   const handleCellClick = (event, params) => {
     const cellElement = event.currentTarget;
     const parentElement = cellElement.offsetParent;
     const parentRect = parentElement.getBoundingClientRect();
     const cellReact = cellElement.getBoundingClientRect();
-
     const top = cellReact.bottom - parentRect.top;
     const left = cellReact.left - parentRect.left;
-
     setDropdownPosition({ top, left });
     setCurrentCell({
       rowIndex: params.rowIndex,
       field: params.colDef.field,
       currentValue: params.value,
     });
-
     setSearchText("");
     setSuggestions([]);
     setShowDropdown(true);
   };
-
   // 🔁 This generates dynamic suggestions from user input
   const handleSearch = (event) => {
     const query = event.query.toLowerCase();
     setSearchText(event.query);
-
     if (!currentCell) return;
-
     // Generate fake suggestions dynamically
     const dynamicSuggestions = [...Array(10).keys()].map((i) => ({
       label: `${query} `,
@@ -144,7 +129,6 @@ const About = () => {
       }
     }
   };
-
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -155,11 +139,9 @@ const About = () => {
         setShowDropdown(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showDropdown]);
-
   return (
     <div>
       <h2 style={{ textAlign: "center" }}>Smart Editable Grid</h2>
@@ -241,5 +223,4 @@ const About = () => {
     </div>
   );
 };
-
 export default About;
