@@ -58,7 +58,8 @@ const AutocompleteCellEditor = forwardRef((props, ref) => {
             InputProps={{
               ...params.InputProps,
               disableUnderline: true,
-              style: { padding: 0, height: '100%' }
+              style: { padding: 0, height: '100%' },
+              onClick:((e) =>e.target.value ),
             }}
             sx={{
               '& .MuiInputBase-input': {

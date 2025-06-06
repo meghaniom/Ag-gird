@@ -11,22 +11,27 @@ import {
   ModuleRegistry,
   PaginationModule,
 } from "ag-grid-community";
+
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
   RowSelectionModule,
   PaginationModule,
 ]);
+
 const About = () => {
   const gridRef = useRef();
   const [rowData, setRowData] = useState([]);
+  const [defaultData, setDefaultData] = useState([]);
+  const [gridApi, setGridApi] = useState(null);
+
   const [showDropdown, setShowDropdown] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [currentCell, setCurrentCell] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [suggestions, setSuggestions] = useState([]);
-  const [gridApi, setGridApi] = useState(null);
-  // Sample initial data
-  const allData = [
+
+  // 👇 Initial Data
+  const [initialData, setInitialData]  = useState ([
     { id: 1, name: "Alice", group: "Group A", price: 100, number: 120 },
     { id: 2, name: "Bob", group: "Group B", price: 120, number: 100 },
     { id: 3, name: "Coc", group: "Group C", price: 150, number: 80 },
@@ -42,55 +47,49 @@ const About = () => {
     { id: 13, name: "Mona", group: "Group C", price: 60, number: 165 },
     { id: 14, name: "Nick", group: "Group D", price: 70, number: 65 },
     { id: 15, name: "Olivia", group: "Group E", price: 150, number: 32 },
-  ];
+  ]);
+
   const [colDefs] = useState([
-    {
-      field: "id",
-      headerName: "Id",
-      cellRenderer: (params) => renderClickableCell(params),
-    },
-    {
-      field: "name",
-      headerName: "Product",
-      cellRenderer: (params) => renderClickableCell(params),
-    },
-    {
-      field: "group",
-      headerName: "Group",
-      cellRenderer: (params) => renderClickableCell(params),
-    },
-    {
-      field: "price",
-      headerName: "Price",
-      cellRenderer: (params) => renderClickableCell(params),
-    },
+    { field: "id", headerName: "ID", cellRenderer: renderClickableCell },
+    { field: "name", headerName: "Name", cellRenderer: renderClickableCell },
+    { field: "group", headerName: "Group", cellRenderer: renderClickableCell },
+    { field: "price", headerName: "Price", cellRenderer: renderClickableCell },
     {
       field: "number",
       headerName: "Number",
-      cellRenderer: (params) => renderClickableCell(params),
+      cellRenderer: renderClickableCell,
     },
   ]);
+
   useEffect(() => {
-    setRowData([...allData]);
-  }, []);
-  const renderClickableCell = (params) => {
-    return (
-      <div
-        className="clickable-cell"
-        onClick={(e) => handleCellClick(e, params)}
-      >
-        {params.value || <span style={{ color: "#999" }}>Click to edit</span>}
-      </div>
-    );
-  };
+    setRowData([...initialData]);
+    setDefaultData([...initialData]);
+  }, [initialData]);
+
+ function renderClickableCell(params) {
+  return (
+    <div
+      className="clickable-cell"
+      onClick={(e) => handleCellClick(e, params)}
+      key={`${params.rowIndex}-${params.colDef.field}`} // Add this line
+    >
+      {params.value !== undefined && params.value !== null ? (
+        params.value
+      ) : (
+        <span style={{ color: "#aaa" }}>Click to edit</span>
+      )}
+    </div>
+  );
+}
   const handleCellClick = (event, params) => {
     const cellElement = event.currentTarget;
-    const parentElement = cellElement.offsetParent;
-    const parentRect = parentElement.getBoundingClientRect();
-    const cellReact = cellElement.getBoundingClientRect();
-    const top = cellReact.bottom - parentRect.top;
-    const left = cellReact.left - parentRect.left;
-    setDropdownPosition({ top, left });
+    const parentRect = cellElement.offsetParent.getBoundingClientRect();
+    const cellRect = cellElement.getBoundingClientRect();
+
+    setDropdownPosition({
+      top: cellRect.bottom - parentRect.top,
+      left: cellRect.left - parentRect.left,
+    });
     setCurrentCell({
       rowIndex: params.rowIndex,
       field: params.colDef.field,
@@ -99,81 +98,75 @@ const About = () => {
     setSearchText("");
     setSuggestions([]);
     setShowDropdown(true);
+    console.log("The function is called");
   };
-  // 🔁 This generates dynamic suggestions from user input
-  const handleSearch = (event) => {
-    const query = event.query.toLowerCase();
-    setSearchText(event.query);
-    if (!currentCell) return;
-    // Generate fake suggestions dynamically
-    const dynamicSuggestions = [...Array(10).keys()].map((i) => ({
-      label: `${query} `,
-      value: `${query} `,
+  const handleSearch = (e) => {
+    const query = e.query.toLowerCase();
+    const dynamicSuggestions = [...Array(5).keys()].map((i) => ({
+      label: `${query}`,
+      value: `${query}`,
     }));
     setSuggestions(dynamicSuggestions);
+    setSearchText(e.query);
+    console.log("heeee");
   };
-  const handleSuggestionSelect = (e) => {
-    const newValue = e.value;
-    const updatedData = [...rowData];
-    updatedData[currentCell.rowIndex][currentCell.field] = newValue;
-    setRowData(updatedData);
-    setShowDropdown(false);
-    if (gridApi && currentCell) {
-      const rowNode = gridApi.getDisplayedRowAtIndex(currentCell.rowIndex);
-      if (rowNode) {
-        gridApi.refreshCells({
-          rowNodes: [rowNode],
-          columns: [currentCell.field],
-          force: true,
-        });
-      }
-    }
-  };
+const handleSuggestionSelect = (e) => {
+  console.log('Selected value:', e.value);
+  const newValue = e.value;
+  if (!currentCell) return;
+  console.log('Current cell before update:', currentCell);
+
+  const updateRow = (data) =>
+    data.map((row, index) =>
+      index === currentCell.rowIndex
+        ? { ...row, [currentCell.field]: newValue }
+        : row
+    );
+
+  const updatedRowData = updateRow(rowData);
+  const updatedDefaultData = updateRow(defaultData);
+  const updatedInitialData = updateRow(initialData);
+
+  console.log('Updated initialData:', updatedInitialData); // Check if this is correct
+
+  setRowData(updatedRowData);
+  setDefaultData(updatedDefaultData);
+  setInitialData(updatedInitialData);
+
+  console.log('State after update - initialData:', initialData); // This might show old data due to async nature
+};
+
   useEffect(() => {
-    const handleClickOutside = (event) => {
+    const handleClickOutside = (e) => {
       if (
         showDropdown &&
-        !event.target.closest(".p-autocomplete") &&
-        !event.target.closest(".clickable-cell")
+        !e.target.closest(".p-autocomplete") &&
+        !e.target.closest(".clickable-cell")
       ) {
         setShowDropdown(false);
       }
+      console.log("Clicked  button");
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showDropdown]);
+
   return (
     <div>
       <h2 style={{ textAlign: "center" }}>Smart Editable Grid</h2>
       <div
         className="ag-theme-alpine"
-        style={{
-          height: "400px",
-          width: "100%",
-          position: "relative",
-          border: "1px solid #ccc",
-        }}
+        style={{ height: "400px", width: "100%", position: "relative" }}
       >
-        <style>
-          {`
-    .ag-theme-alpine .ag-cell {
-        border-right: 1px solid #ccc;
-        border-bottom: 1px solid #ccc;
-    }
-    .ag-theme-alpine .ag-row:last-child .ag-cell {
-        border-bottom: none;
-    }
-    `}
-        </style>
         <AgGridReact
           ref={gridRef}
           rowData={rowData}
           columnDefs={colDefs}
           pagination={true}
-          paginationPageSize={20}
+          paginationPageSize={10}
           onGridReady={(params) => {
             setGridApi(params.api);
-            params.api.sizeColumnsToFit(); // This is safe now
+            params.api.sizeColumnsToFit();
           }}
         />
       </div>
@@ -181,16 +174,15 @@ const About = () => {
         <div
           style={{
             position: "absolute",
-            top: `${dropdownPosition.top}px`,
-            left: `${dropdownPosition.left}px`,
+            top: dropdownPosition.top,
+            left: dropdownPosition.left,
             zIndex: 1000,
-            backgroundColor: "white",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-            padding: "10px",
+            background: "#fff",
+            boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+            padding: "8px",
             borderRadius: "4px",
             minWidth: "200px",
           }}
-          className="p-autocomplete"
         >
           <AutoComplete
             value={searchText}
@@ -210,11 +202,11 @@ const About = () => {
       <style jsx>{`
         .clickable-cell {
           cursor: pointer;
+          padding: 5px;
           width: 100%;
           height: 100%;
           display: flex;
           align-items: center;
-          padding: 0 10px;
         }
         .clickable-cell:hover {
           background-color: #f0f0f0;
@@ -223,4 +215,5 @@ const About = () => {
     </div>
   );
 };
+
 export default About;
