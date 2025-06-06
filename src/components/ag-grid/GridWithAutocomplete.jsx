@@ -2,10 +2,13 @@ import React, { useRef, useState } from "react";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
-import { ModuleRegistry } from "ag-grid-community";
-import { ClientSideRowModelModule } from "ag-grid-community";
-import { RowSelectionModule } from "ag-grid-community";
+import { ModuleRegistry } from "ag-grid-enterprise";
+import {
+  ClientSideRowModelModule,
+  RowSelectionModule,
+} from "ag-grid-community";
 import AutocompleteCellEditor from "./AutocompleteCellEditor";
+import PrimeAutoCompleteEditor from "./AutocompleteCellEditor";
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
   RowSelectionModule, // ✅ Register this
@@ -44,7 +47,7 @@ function GridWithAutocomplete() {
       headerName: "Group",
       field: "group",
       editable: true,
-      cellEditor: AutocompleteCellEditor,
+      cellEditor: PrimeAutoCompleteEditor,
       cellEditorPopup: true,
       cellEditorParams: {
         options: ["Group A", "Group B", "Group C", "Group D", "Group E"],
@@ -81,6 +84,7 @@ function GridWithAutocomplete() {
 `}
         </style>
         <AgGridReact
+          ref={gridRef}
           rowData={rowData}
           columnDefs={columnDefs}
           defaultColDef={{
@@ -94,7 +98,8 @@ function GridWithAutocomplete() {
           pagination={true}
           rowSelection="single"
           onSelectionChanged={() => {
-            const selectedNodes = gridRef.current.api.getSelectedNodes();
+            const selectedNodes =
+              gridRef.current?.api?.getSelectedNodes?.() || [];
             if (selectedNodes.length > 0) {
               const row = selectedNodes[0].data;
               setSelectedRowId(row.id);
@@ -105,16 +110,22 @@ function GridWithAutocomplete() {
             }
           }}
           onCellValueChanged={(e) => {
-            const updatedData = rowData.map((row) =>
-              row.id === e.data.id ? e.data : row
+            setRowData((prevData) =>
+              prevData.map((row) => (row.id === e.data.id ? e.data : row))
             );
-            setRowData(updatedData);
             setLastEditedValue(
               `Field: ${e.colDef.field}, Value: ${e.newValue}`
             );
-            if (e.colDef.field === "group" && e.data.id === selectedRowId) {
+            // Use e.data.id instead of selectedRowId to avoid stale closure
+            if (e.colDef.field === "group") {
               setInputValue(e.newValue);
             }
+            <AutoComplete
+              value={value}
+              suggestions={items}
+              completeMethod={search}
+              onChange={(e) => setValue(e.value)}
+            />;
           }}
         />
       </div>
