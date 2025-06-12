@@ -34,7 +34,7 @@ const DropdownEditor = forwardRef((props, ref) => {
   };
 
   useImperativeHandle(ref, () => ({
-    getValue: () => valueRef.current, // ✅ always latest value
+    getValue: () => valueRef.current, 
     isCancelAfterEnd: () => false,
   }));
 
@@ -218,15 +218,15 @@ const GridExample = () => {
             minWidth: 100,
             resizable: true,
           }}
-          onCellValueChanged={onCellValueChanged} // Add this handler
-          singleClickEdit={true} // Makes editing start on single click
+          onCellValueChanged={onCellValueChanged}
+          singleClickEdit={true} 
         />
       </div>
     </div>
   );
 };
 
-// Render the app
+
 const root = createRoot(document.getElementById("root"));
 root.render(
   <PrimeReactProvider>
