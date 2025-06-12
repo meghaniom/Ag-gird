@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { AutoComplete } from "primereact/autocomplete";
-import "ag-grid-community/styles/ag-grid.css";
-import "ag-grid-community/styles/ag-theme-alpine.css";
-import "primereact/resources/themes/lara-light-indigo/theme.css";
-import "primereact/resources/primereact.min.css";
+// import "ag-grid-community/styles/ag-grid.css";
+// import "ag-grid-community/styles/ag-theme-alpine.css";
+// import "primereact/resources/themes/lara-light-indigo/theme.css";
+// import "primereact/resources/primereact.min.css";
+
+import './App.css'
 import {
   ClientSideRowModelModule,
   RowSelectionModule,
@@ -16,6 +18,7 @@ ModuleRegistry.registerModules([
   ClientSideRowModelModule,
   RowSelectionModule,
   PaginationModule,
+  
 ]);
 
 const About = () => {
@@ -30,8 +33,7 @@ const About = () => {
   const [searchText, setSearchText] = useState("");
   const [suggestions, setSuggestions] = useState([]);
 
-  // 👇 Initial Data
-  const [initialData, setInitialData]  = useState ([
+  const [initialData, setInitialData] = useState([
     { id: 1, name: "Alice", group: "Group A", price: 100, number: 120 },
     { id: 2, name: "Bob", group: "Group B", price: 120, number: 100 },
     { id: 3, name: "Coc", group: "Group C", price: 150, number: 80 },
@@ -62,25 +64,25 @@ const About = () => {
   ]);
 
   useEffect(() => {
-    setRowData([...initialData]);
-    setDefaultData([...initialData]);
+    setRowData([...initialData]); // Initialize table from initialData
   }, [initialData]);
 
- function renderClickableCell(params) {
-  return (
-    <div
-      className="clickable-cell"
-      onClick={(e) => handleCellClick(e, params)}
-      key={`${params.rowIndex}-${params.colDef.field}`} // Add this line
-    >
-      {params.value !== undefined && params.value !== null ? (
-        params.value
-      ) : (
-        <span style={{ color: "#aaa" }}>Click to edit</span>
-      )}
-    </div>
-  );
-}
+  function renderClickableCell(params) {
+    return (
+      <div
+        className="clickable-cell"
+        onClick={(e) => handleCellClick(e, params)}
+        key={`${params.rowIndex}-${params.colDef.field}`}
+      >
+        {params.value !== undefined && params.value !== null ? (
+          params.value
+        ) : (
+          <span style={{ color: "#aaa" }}>Click to edit</span>
+        )}
+      </div>
+    );
+  }
+
   const handleCellClick = (event, params) => {
     const cellElement = event.currentTarget;
     const parentRect = cellElement.offsetParent.getBoundingClientRect();
@@ -98,43 +100,38 @@ const About = () => {
     setSearchText("");
     setSuggestions([]);
     setShowDropdown(true);
-    console.log("The function is called");
   };
+
   const handleSearch = (e) => {
     const query = e.query.toLowerCase();
     const dynamicSuggestions = [...Array(5).keys()].map((i) => ({
-      label: `${query}`,
-      value: `${query}`,
+      label: `${query} ${i + 1}`,
+      value: `${query} ${i + 1}`,
     }));
     setSuggestions(dynamicSuggestions);
     setSearchText(e.query);
-    console.log("heeee");
   };
-const handleSuggestionSelect = (e) => {
-  console.log('Selected value:', e.value);
-  const newValue = e.value;
-  if (!currentCell) return;
-  console.log('Current cell before update:', currentCell);
 
-  const updateRow = (data) =>
-    data.map((row, index) =>
-      index === currentCell.rowIndex
-        ? { ...row, [currentCell.field]: newValue }
-        : row
-    );
+  const handleSuggestionSelect = (e) => {
+    const newValue = e.value;
+    if (!currentCell) return;
 
-  const updatedRowData = updateRow(rowData);
-  const updatedDefaultData = updateRow(defaultData);
-  const updatedInitialData = updateRow(initialData);
+    const updateRow = (data) =>
+      data.map((row, index) =>
+        index === currentCell.rowIndex
+          ? { ...row, [currentCell.field]: newValue }
+          : row
+      );
 
-  console.log('Updated initialData:', updatedInitialData); // Check if this is correct
+    const updatedRowData = updateRow(rowData);
+    const updatedInitialData = updateRow(initialData);
 
-  setRowData(updatedRowData);
-  setDefaultData(updatedDefaultData);
-  setInitialData(updatedInitialData);
+    setRowData([...updatedRowData]); // grid refresh
+    setInitialData([...updatedInitialData]); // ensure immutability
+    setDefaultData(updateRow(defaultData)); // optional
 
-  console.log('State after update - initialData:', initialData); // This might show old data due to async nature
-};
+    setShowDropdown(false);
+  };
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -145,31 +142,72 @@ const handleSuggestionSelect = (e) => {
       ) {
         setShowDropdown(false);
       }
-      console.log("Clicked  button");
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showDropdown]);
 
+
+  const onGridReady = (params) => {
+  setGridApi(params.api);
+  const checkGridReady = () => {
+    const gridEl = document.querySelector('.ag-theme-alpine');
+    if (gridEl && gridEl.offsetWidth > 0) {
+      params.api.sizeColumnsToFit();
+    } else {
+      setTimeout(checkGridReady, 50);
+    }
+  };
+  checkGridReady();
+};
+const onFirstDataRendered = (params) => {
+  try {
+    const allColumnIds = params.columnApi.getColumns()
+      .map(column => column.getId());``
+    
+    // First auto-size columns based on content
+    params.columnApi.autoSizeColumns(allColumnIds);
+    
+    // Then fit to grid width
+    setTimeout(() => params.api.sizeColumnsToFit(), 50);
+  } catch (error) {
+    console.warn("Column sizing error:", error);
+  }
+};
+  
+
   return (
     <div>
       <h2 style={{ textAlign: "center" }}>Smart Editable Grid</h2>
+
+      <button
+        onClick={() => setRowData([...initialData])}
+        style={{
+          marginBottom: "10px",
+          padding: "6px 12px",
+          borderRadius: "4px",
+          border: "1px solid #ccc",
+          cursor: "pointer",
+        }}
+      >
+        Reset Grid
+      </button>
+
       <div
         className="ag-theme-alpine"
-        style={{ height: "400px", width: "100%", position: "relative" }}
+        style={{ height: "400px", width: "100%", position: "relative", minHeight: "400px" }}
       >
-        <AgGridReact
-          ref={gridRef}
-          rowData={rowData}
-          columnDefs={colDefs}
-          pagination={true}
-          paginationPageSize={10}
-          onGridReady={(params) => {
-            setGridApi(params.api);
-            params.api.sizeColumnsToFit();
-          }}
-        />
+   <AgGridReact
+  ref={gridRef}
+  rowData={rowData}
+  columnDefs={colDefs}
+  pagination={true}
+  paginationPageSize={10}
+  onGridReady={(params) => setGridApi(params.api)}
+  onFirstDataRendered={(params) => params.api.sizeColumnsToFit()}
+/>
       </div>
+
       {showDropdown && (
         <div
           style={{
@@ -199,19 +237,10 @@ const handleSuggestionSelect = (e) => {
           />
         </div>
       )}
-      <style jsx>{`
-        .clickable-cell {
-          cursor: pointer;
-          padding: 5px;
-          width: 100%;
-          height: 100%;
-          display: flex;
-          align-items: center;
-        }
-        .clickable-cell:hover {
-          background-color: #f0f0f0;
-        }
-      `}</style>
+
+    <style>
+      <div className="clickable-cell"></div>
+    </style>
     </div>
   );
 };
