@@ -1,105 +1,30 @@
 import React, {
   useMemo,
   useState,
-  useImperativeHandle,
-  forwardRef,
+  useRef,
 } from "react";
 import { createRoot } from "react-dom/client";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-theme-quartz.css";
-import { AutoComplete } from "primereact/autocomplete";
 import { PrimeReactProvider } from "primereact/api";
-
 import {
   AllCommunityModule,
   ModuleRegistry,
   themeQuartz,
 } from "ag-grid-community";
-import { NoEncryption } from "@mui/icons-material";
+import DropDownEditor from "./DropDownEditor";
 ModuleRegistry.registerModules([AllCommunityModule]);
-
-const DropdownEditor = forwardRef((props, ref) => {
-  const valueRef = useRef(props.value || "");
-  const [inputValue, setInputValue] = useState(valueRef.current);
-  const [suggestions, setSuggestions] = useState([]);
-
-  const field = props.colDef.field;
-  const optionsMap = {
-    name: ["Isabelle", "Charlotte", "Emily", "Andrew"],
-    make: ["Toyota", "Porsche", "Ford", "Safari", "Mercedes"],
-    model: ["Celica", "Boxster", "Mondeo", "x700", "Creata"],
-    color: ["red", "white", "blue", "pink", "yellow"],
-    Country: ["India", "USA", "Japan", "Singapore", "Malaysia"],
-    skill: ["Chess", "Tennis", "BasketBall", "Soccer", "Badminton"],
-  };
-
-  useImperativeHandle(ref, () => ({
-    getValue: () => valueRef.current, 
-    isCancelAfterEnd: () => false,
-  }));
-
-  const search = (event) => {
-    const data = optionsMap[field] || [];
-    const filtered = data.filter((item) =>
-      item.toLowerCase().includes(event.query.toLowerCase())
-    );
-    setSuggestions(filtered);
-  };
-  return (
-    <AutoComplete
-      value={inputValue}
-      suggestions={suggestions}
-      completeMethod={search}
-      onChange={(e) => {
-        setInputValue(e.value);
-        valueRef.current = e.value
-      }}
-      dropdown
-      forceSelection={false}
-      autoFocus
-      style={{
-        width: "100%",
-        height: "100%",
-        fontSize: "14px",
-        padding: 0,
-        background: "yellow",
-        outline: "none",
-      }}
-      panelStyle={{
-        fontSize: "14px",
-        background: "gray",
-        color: "white",
-        zIndex: 1000,
-      }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          props.stopEditing(); 
-          e.stopPropagation();
-        }
-      }}
-      onBlur={() => {
-        props.stopEditing(); 
-      }}
-      onSelect={(e) => {
-       setInputValue(e.value);
-       valueRef.current = e.value;
-       props.stopEditing()
-      }}
-      itemTemplate={(item) => <div style={{ padding: "5px" }}>{item}</div>}
-    />
-  );
-});
-
 const GridExample = () => {
   const containerStyle = useMemo(
     () => ({ width: "100%", height: "600px" }),
     []
   );
   const gridStyle = useMemo(() => ({ height: "100%", width: "100%" }), []);
-
+  const gridRef = useRef(null);
   const [rowData, setRowData] = useState([
     {
       name: "Isabelle Keating",
+      id: 1,
       make: "Toyota",
       model: "Celica",
       price: 350000,
@@ -109,6 +34,7 @@ const GridExample = () => {
     },
     {
       name: "Charlotte Lopes",
+      id: 2,
       make: "Porsche",
       model: "Boxster",
       price: 702000,
@@ -119,6 +45,7 @@ const GridExample = () => {
     {
       name: "Emily Jagger",
       make: "Toyota",
+      id: 3,
       model: "Celica",
       price: 350000,
       color: "red",
@@ -128,6 +55,7 @@ const GridExample = () => {
     {
       name: "Andrew Jacoby",
       make: "Ford",
+      id: 4,
       model: "Mondeo",
       price: 320000,
       color: "white",
@@ -137,6 +65,7 @@ const GridExample = () => {
     {
       name: "Dimple Jacoby",
       make: "Toyota",
+      id: 5,
       model: "Celica",
       price: 350000,
       color: "red",
@@ -146,6 +75,7 @@ const GridExample = () => {
     {
       name: "Freya Donovan",
       make: "Toyota",
+      id: 6,
       model: "Auto",
       price: 120000,
       color: "pink",
@@ -155,6 +85,7 @@ const GridExample = () => {
     {
       name: "Mia Hunter",
       make: "Toyota",
+      id: 7,
       model: "Celica",
       price: 350000,
       color: "red",
@@ -164,6 +95,7 @@ const GridExample = () => {
     {
       name: "Mia Smith",
       make: "Safari",
+      id: 8,
       model: "x700",
       price: 15000,
       color: "yellow",
@@ -173,6 +105,7 @@ const GridExample = () => {
     {
       name: "Dimple Jacoby",
       make: "Mercedes",
+      id: 9,
       model: "Creta",
       price: 120000,
       color: "blue",
@@ -180,35 +113,68 @@ const GridExample = () => {
       skill: "Snowboarding",
     },
   ]);
-
   const columnDefs = useMemo(
     () => [
-      { field: "name", editable: true, cellEditor: DropdownEditor },
-      { field: "make", editable: true, cellEditor: DropdownEditor },
-      { field: "model", editable: true, cellEditor: DropdownEditor },
-      { field: "price" },
-      { field: "color", editable: true, cellEditor: DropdownEditor },
-      { field: "Country", editable: true, cellEditor: DropdownEditor },
-      { field: "skill", editable: true, cellEditor: DropdownEditor },
+      {
+        field: "name",
+        editable: true,
+        cellEditor: DropDownEditor,
+        cellEditorParams: { rowData: rowData, setRowData: setRowData },
+      },
+      {
+        field: "id",
+        cellEditor: true,
+        cellEditor: DropDownEditor,
+        cellEditorParams: { rowData: rowData, setRowData: setRowData },
+      },
+      {
+        field: "make",
+        editable: true,
+        cellEditor: DropDownEditor,
+        cellEditorParams: { rowData: rowData, setRowData: setRowData },
+      },
+      {
+        field: "model",
+        editable: true,
+        cellEditor: DropDownEditor,
+        cellEditorParams: { rowData: rowData, setRowData: setRowData },
+      },
+      {
+        field: "price",
+        editable: true,
+        cellEditor: DropDownEditor,
+        cellEditorParams: { rowData: rowData, setRowData: setRowData },
+      },
+      {
+        field: "color",
+        editable: true,
+        cellEditor: DropDownEditor,
+        cellEditorParams: { rowData: rowData, setRowData: setRowData },
+      },
+      {
+        field: "Country",
+        editable: true,
+        cellEditor: DropDownEditor,
+        cellEditorParams: { rowData: rowData, setRowData: setRowData },
+      },
+      {
+        field: "skill",
+        editable: true,
+        cellEditor: DropDownEditor,
+        cellEditorParams: { rowData: rowData, setRowData: setRowData },
+      },
     ],
     []
   );
-
   const myTheme = themeQuartz.withParams({
     spacing: 12,
     accentColor: "gray",
   });
-
-  const onCellValueChanged = (params) => {
-    const updatedData = [...rowData];
-    updatedData[params.rowIndex] = params.data;
-    setRowData(updatedData);
-  };
-
   return (
     <div style={containerStyle}>
       <div style={gridStyle} className="ag-theme-quartz">
         <AgGridReact
+          ref={gridRef}
           rowData={rowData}
           columnDefs={columnDefs}
           theme={myTheme}
@@ -218,15 +184,13 @@ const GridExample = () => {
             minWidth: 100,
             resizable: true,
           }}
-          onCellValueChanged={onCellValueChanged}
-          singleClickEdit={true} 
+          singleClickEdit={true}
         />
+        {console.log("ddwqwq")}
       </div>
     </div>
   );
 };
-
-
 const root = createRoot(document.getElementById("root"));
 root.render(
   <PrimeReactProvider>
