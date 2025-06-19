@@ -1,16 +1,18 @@
+import React, {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { AutoComplete } from "primereact/autocomplete";
-import React, { useEffect, useImperativeHandle, useRef, useState } from "react";
 
-const DropDownEditor = ((props, ref) => {
-  const valueRef = useRef(props.value || "");
-  const [inputValue, setInputValue] = useState(valueRef.current);
+const DropDownEditor = forwardRef((props, ref) => {
+  const [inputValue, setInputValue] = useState(props.value || "");
   const [suggestions, setSuggestions] = useState([]);
-
-   const rowData = props.rowData;
-   const setRowData = props.setRowData;
+  const autoCompleteRef = useRef(null);
 
   const field = props.colDef.field;
-  var activeRowId = 1;
 
   const optionMap = {
     name: [
@@ -22,7 +24,6 @@ const DropDownEditor = ((props, ref) => {
       "Freya Donovan",
       "Mia Hunter",
       "Mia Smith",
-      "Dimple Jacoby",
     ],
     make: [
       "Toyota",
@@ -34,25 +35,10 @@ const DropDownEditor = ((props, ref) => {
       "Swift",
       "Jeguvar",
     ],
-    model: 
-    ["Celica",
-    "Boxster",
-    "Mondeo",
-    "x700",
-    "Creata",
-     "Auto"],
-    color:
-    ["red", 
-    "white",
-    "blue",
-    "pink",
-    "yellow"],
-    Country:
-    ["India",
-    "USA",
-    "Japan",
-    "Singapore",
-    "Malaysia"],
+    model: ["Celica", "Boxster", "Mondeo", "x700", "Creta", "Auto"],
+    price: ["15000", "120000", "320000", "350000", "702000"],
+    color: ["red", "white", "blue", "pink", "yellow"],
+    Country: ["India", "USA", "Japan", "Singapore", "Malaysia"],
     skill: [
       "Chess",
       "Billiards",
@@ -63,85 +49,89 @@ const DropDownEditor = ((props, ref) => {
       "Snowboarding",
     ],
   };
-  useImperativeHandle(ref, () => ({
-    getValue: () => valueRef.current,
-  }));
-  console.log(useImperativeHandle);
 
   const search = (event) => {
-    const data = optionMap[field] || [];
     const input = event.query.toLowerCase();
+    const data = optionMap[field] || [];
     const filtered = data.filter((item) => item.toLowerCase().includes(input));
-    console.log(search);
     setSuggestions(filtered);
   };
 
-    //  const onCellValueChanged = (params) => {
-    //   const updatedRow = params.data;
-    //   console.log("updatedRow", updatedRow);
-  
-    //   const updatedData = rowData?.map((row ) =>
-    //     row.id === updatedRow.id ? updatedRow : row);
-    //   console.log("updatedData", updatedData);
-    //   setRowData(updatedData);
-    // };
+  useImperativeHandle(ref, () => ({
+    getValue: () => inputValue,
+    isCancelBeforeStart: () => false,
+    isCancelAfterEnd: () => false,
+  }));
+    useEffect(() => {
+    setTimeout(() => {
+      if (
+        autoCompleteRef.current &&
+        autoCompleteRef.current.inputEl &&
+        props.eGridCell
+      ) {
+        const inputEl = autoCompleteRef.current.inputEl;
+        const { offsetWidth, offsetHeight } = props.eGridCell;
 
-    const cellValuechanged = (params) => {
-        const updateRow = params.data;
-        console.log('updateRow');
-         rowData.map(()=>    )
-        //  const updateData = rowData?.map((row)=> {
-        //     row.id === updateRow.id ? updateRow :  row;
-        //     console.log(updateData);
-        //     setRowData(updateData);
-            
-         })
-     console.log("clicked", params)
-    
-}
-  useEffect(() => {
-    valueRef.current = inputValue;
-    console.log("updated is value", valueRef.current);
-
-    const params = {
-      rowData: {
-        id: activeRowId,
-        valueRef: inputValue,
-      },
-    };
-   cellValuechanged(params);
-  }, [inputValue]);
+        inputEl.style.width = `${offsetWidth}px`;
+        inputEl.style.height = `${offsetHeight}px`;
+        inputEl.style.lineHeight = `${offsetHeight}px`;
+        inputEl.style.padding = "0 8px";
+        inputEl.style.margin = "0";
+        inputEl.style.border = "none";
+        inputEl.style.boxSizing = "border-box";
+        inputEl.style.fontSize = "14px";
+      }
+    }, 0);
+  }, [props.eGridCell]);
 
   return (
     <AutoComplete
+      ref={autoCompleteRef}
       value={inputValue}
       suggestions={suggestions}
       completeMethod={search}
       onChange={(e) => {
         setInputValue(e.value);
-        cellValuechanged =(cellValuechanged);
+
+        // Live update row data
+        if (props.setRowData && props.rowData && props.node?.data) {
+          const updatedRow = { ...props.node.data, [field]: e.value };
+          const updatedData = props.rowData.map((row) =>
+            row.id === updatedRow.id ? updatedRow : row
+          );
+          props.setRowData(updatedData);
+        }
       }}
       dropdown
-      // forceSelection={false}
-      // autoFocus
       style={{
-        width: "100%",
-        height: "100%",
+        width: "240px",
+        height: "40px",
         fontSize: "14px",
         padding: 0,
-        background: "yellow",
-        outline: "none",
       }}
       panelStyle={{
         fontSize: "14px",
-        background: "white",
-        color: "black",
+        background: "#f0f8ff", // Light blue background
+        color: "#333",
         zIndex: 1000,
+        minWidth: "150px", // set minimum width 
+        maxHeight: "200px", // optional scroll
+        overflowY: "auto",
       }}
-      itemTemplate={(item) => <div style={{ padding: "5px" }}>{item}</div>}
+      itemTemplate={(item) => (
+        <div
+          style={{
+            padding: "5px 10px",
+            color: "#fff",
+            backgroundColor: "#007acc", // Blue background for item
+            borderBottom: "1px solid #e0e0e0",
+          }}
+        >
+          {item}
+        </div>
+      )}
     />
   );
 });
-console.log("item");
 
 export default DropDownEditor;
